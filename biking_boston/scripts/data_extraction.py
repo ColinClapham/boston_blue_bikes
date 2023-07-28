@@ -32,6 +32,41 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
         logger.info(f'Removing {csv_file_name}')
         delete_file(csv_file_name)
 
+        # Step 6: Process Data to account for migration of data points
+        if 'ride_id' in df:
+            df = df[['started_at',
+                     'ended_at',
+                     'start_station_name',
+                     'start_station_id',
+                     'end_station_name',
+                     'end_station_id',
+                     'start_lat',
+                     'start_lng',
+                     'end_lat',
+                     'end_lng',
+                     'member_casual']]
+        else:
+            df = df[['starttime',
+                     'stoptime',
+                     'start station name',
+                     'start station id',
+                     'end station name',
+                     'end station id',
+                     'start station latitude',
+                     'start station longitude',
+                     'end station latitude',
+                     'end station longitude',
+                     'usertype']].rename(columns={'starttime':'started_at',
+                                                  'stoptime':'ended_at',
+                                                  'start station name': 'start_station_name',
+                                                  'start station id':'legacy_start_station_id',
+                                                  'end station name':'end_station_name',
+                                                  'end station id':'legacy_end_station_id',
+                                                  'start station latitude':'start_lat',
+                                                  'start station longitude':'start_lng',
+                                                  'end station latitude':'end_lat',
+                                                  'end station longitude':'end_lng',
+                                                  'usertype':'member_casual'})
         return df
 
 def extract_trip_data(start_month, end_month):
@@ -51,14 +86,14 @@ def extract_hub_data():
     blue_bikes_trip_data = pd.DataFrame()
     logger.info(f'Reading Hub Data')
     url = f'https://s3.amazonaws.com/hubway-data/current_bluebikes_stations.csv'
-    hub_data_df = pd.read_csv(url)
+    hub_data_df = pd.read_csv(url,skiprows=1)
     logger.info(f'Hub Data Complete!')
     return hub_data_df
 
 
 
-is_read_trip_data = False
-is_read_hub_data = False
+is_read_trip_data = True
+is_read_hub_data = True
 
 if is_read_trip_data:
     logger.info('Reading Trip Data')
