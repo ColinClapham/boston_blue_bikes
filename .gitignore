@@ -1,0 +1,4 @@
+*.parquet
+*.DS_Store
+*.csv
+biking_boston/scripts/__pycache__
