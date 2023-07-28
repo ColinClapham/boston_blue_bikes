@@ -46,11 +46,35 @@ def extract_trip_data(start_month, end_month):
         logger.info(f'Month {month} Complete!')
     return blue_bikes_trip_data
 
+def extract_hub_data():
+    blue_bikes_trip_data = pd.DataFrame()
+    logger.info(f'Reading Hub Data')
+    url = f'https://s3.amazonaws.com/hubway-data/current_bluebikes_stations.csv'
+    hub_data_df = pd.read_csv(url)
+    logger.info(f'Hub Data Complete!')
+    return hub_data_df
 
-# Define the path for the Parquet file
-parquet_file = '../inputs/blue_bikes_master_trip_data.parquet'
-# Convert the pandas DataFrame to a pyarrow Table
-table = pa.Table.from_pandas(extract_trip_data('201805', '202305'))
-# Write the Table to a Parquet file
-pq.write_table(table, parquet_file)
-print(f"Data has been written to '{parquet_file}' in Parquet format.")
+
+
+is_read_trip_data = False
+is_read_hub_data = False
+
+if is_read_trip_data:
+    logger.info('Reading Trip Data')
+    # Define the path for the Parquet file
+    parquet_file = '../inputs/blue_bikes_master_trip_data.parquet'
+    # Convert the pandas DataFrame to a pyarrow Table
+    table = pa.Table.from_pandas(extract_trip_data('201805', '202305'))
+    # Write the Table to a Parquet file
+    pq.write_table(table, parquet_file)
+    print(f"Data has been written to '{parquet_file}' in Parquet format.")
+else:
+    logger.info('Skip Trip Data')
+    pass
+
+if is_read_hub_data:
+    logger.info('Reading Hub Data')
+    extract_hub_data().to_csv('../inputs/blue_bikes_hub_data.csv')
+else:
+    logger.info('Skip Hub Data')
+    pass
