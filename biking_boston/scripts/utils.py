@@ -1,4 +1,5 @@
 import os
+
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
     return y * 12 + m

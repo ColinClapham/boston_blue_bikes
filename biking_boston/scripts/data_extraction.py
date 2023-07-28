@@ -11,6 +11,7 @@ def stitch_dataframes_vertically(dataframes):
     # Concatenate the DataFrames vertically
     combined_df = pd.concat(dataframes, ignore_index=True)
     return combined_df
+
 def download_and_unzip_csv(url, zip_file_name, csv_file_name):
     # Step 1: Download the ZIP file from the URL
     response = requests.get(url)
