@@ -100,7 +100,7 @@ if is_read_trip_data:
     # Define the path for the Parquet file
     parquet_file = '../inputs/blue_bikes_master_trip_data.parquet'
     # Convert the pandas DataFrame to a pyarrow Table
-    table = pa.Table.from_pandas(extract_trip_data('201805', '202305'))
+    table = pa.Table.from_pandas(extract_trip_data('201805', '202603'))
     # Write the Table to a Parquet file
     pq.write_table(table, parquet_file)
     print(f"Data has been written to '{parquet_file}' in Parquet format.")
