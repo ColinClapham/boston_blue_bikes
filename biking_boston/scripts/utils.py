@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+import hashlib
+
 
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
@@ -51,3 +53,14 @@ def get_csv_filename(file_name):
         return file_name.replace(".zip", ".csv")
     else:
         raise ValueError(f"Unexpected filename: {file_name}")
+
+def make_ride_id(row):
+    base_string = (
+        str(row["started_at"]) +
+        str(row["ended_at"]) +
+        str(row["start_station_name"]) +
+        str(row["end_station_name"]) +
+        str(row.get("bike_id", ""))  # optional if exists
+    )
+
+    return hashlib.md5(base_string.encode()).hexdigest()

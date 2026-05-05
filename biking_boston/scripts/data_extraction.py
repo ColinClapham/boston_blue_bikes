@@ -2,12 +2,12 @@ import requests
 import zipfile
 import io
 import pandas as pd
-from biking_boston.scripts.utils import iter_months, delete_file, get_date_range, parquet_exists, get_csv_filename
+from biking_boston.scripts.utils import iter_months, delete_file, get_date_range, parquet_exists, get_csv_filename, make_ride_id
 from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
 import re
-
+from data_export import export_to_snowflake_staging, copy_staging_to_raw
 
 def stitch_dataframes_vertically(dataframes):
     # Concatenate the DataFrames vertically
@@ -35,6 +35,11 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
         logger.info(f'Removing {csv_file_name}')
         delete_file(csv_file_path)
 
+        if "rideable_type" not in df.columns:
+            df["rideable_type"] = "classic_bike"
+        else:
+            df["rideable_type"] = df["rideable_type"].fillna("classic_bike")
+
         # Step 6: Process Data to account for migration of data points
         if 'ride_id' in df:
             df = df[['started_at',
@@ -47,7 +52,8 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
                      'start_lng',
                      'end_lat',
                      'end_lng',
-                     'member_casual']]
+                     'member_casual',
+                     'rideable_type']]
         else:
             df = df[['starttime',
                      'stoptime',
@@ -59,17 +65,21 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
                      'start station longitude',
                      'end station latitude',
                      'end station longitude',
-                     'usertype']].rename(columns={'starttime':'started_at',
-                                                  'stoptime':'ended_at',
-                                                  'start station name': 'start_station_name',
-                                                  'start station id':'legacy_start_station_id',
-                                                  'end station name':'end_station_name',
-                                                  'end station id':'legacy_end_station_id',
-                                                  'start station latitude':'start_lat',
-                                                  'start station longitude':'start_lng',
-                                                  'end station latitude':'end_lat',
-                                                  'end station longitude':'end_lng',
-                                                  'usertype':'member_casual'})
+                     'usertype',
+                     'rideable_type']].rename(columns={'starttime':'started_at',
+                                                       'stoptime':'ended_at',
+                                                       'start station name': 'start_station_name',
+                                                       'start station id':'legacy_start_station_id',
+                                                       'end station name':'end_station_name',
+                                                       'end station id':'legacy_end_station_id',
+                                                       'start station latitude':'start_lat',
+                                                       'start station longitude':'start_lng',
+                                                       'end station latitude':'end_lat',
+                                                       'end station longitude':'end_lng',
+                                                       'usertype':'member_casual'})
+
+        df["ride_id"] = df.apply(make_ride_id, axis=1)
+
         return df
 
 
@@ -112,6 +122,9 @@ def extract_trip_data():
 
                 logger.info(f"Wrote {output_path}")
                 success = True
+
+                export_to_snowflake_staging(yyyymm)
+                logger.info(f"Wrote {output_path} to snowflake")
                 break
 
             except Exception as e:
@@ -140,7 +153,10 @@ if __name__ == '__main__':
     if is_read_trip_data:
         logger.info('Reading Trip Data')
         extract_trip_data()
-        print(f"Data has been written to output path in Parquet format.")
+        logger.info(f"Data has been written to output path in Parquet format.")
+        copy_staging_to_raw()
+        logger.info('Copied staged data into ')
+
     else:
         logger.info('Skip Trip Data')
         pass
