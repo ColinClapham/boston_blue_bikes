@@ -2,7 +2,7 @@ import requests
 import zipfile
 import io
 import pandas as pd
-from utils import iter_months, delete_file, get_date_range, parquet_exists, get_csv_filename
+from biking_boston.scripts.utils import iter_months, delete_file, get_date_range, parquet_exists, get_csv_filename
 from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
