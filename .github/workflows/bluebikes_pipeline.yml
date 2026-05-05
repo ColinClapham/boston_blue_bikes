@@ -24,5 +24,7 @@ jobs:
           pip install pandas pyarrow requests loguru
 
       - name: Run data extraction
+        env:
+          PEM_FILE_CONTENTS: ${{ secrets.pem_file_contents }}
         run: |
           python -m biking_boston.scripts.data_extraction

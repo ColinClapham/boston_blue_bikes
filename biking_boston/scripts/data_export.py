@@ -1,4 +1,12 @@
 import snowflake.connector
+import os
+
+
+def load_private_key():
+    key_path = "/tmp/rsa_key.pem"
+    with open(key_path, "w") as f:
+        f.write(os.environ["PEM_FILE_CONTENTS"])
+    return key_path
 
 def export_to_snowflake_staging(month_string):
 
@@ -11,6 +19,7 @@ def export_to_snowflake_staging(month_string):
         database="BLUEBIKES",
         schema="RAW",
         private_key_file="../../rsa_key.pem"
+    # private_key_file = load_private_key()
     )
 
     cur = conn.cursor()

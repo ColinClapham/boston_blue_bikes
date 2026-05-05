@@ -9,6 +9,7 @@ import pyarrow.parquet as pq
 import re
 from data_export import export_to_snowflake_staging, copy_staging_to_raw
 
+
 def stitch_dataframes_vertically(dataframes):
     # Concatenate the DataFrames vertically
     combined_df = pd.concat(dataframes, ignore_index=True)
