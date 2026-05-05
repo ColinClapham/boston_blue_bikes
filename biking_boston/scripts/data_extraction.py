@@ -93,7 +93,7 @@ def extract_hub_data():
 
 
 is_read_trip_data = True
-is_read_hub_data = True
+is_read_hub_data = False
 
 if is_read_trip_data:
     logger.info('Reading Trip Data')
