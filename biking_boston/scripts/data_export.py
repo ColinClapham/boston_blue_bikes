@@ -15,11 +15,11 @@ def export_to_snowflake_staging(month_string):
 
     cur = conn.cursor()
 
-    # 1. Create a stage (one-time safe to re-run)
-    cur.execute("""
-        CREATE OR REPLACE STAGE trips_parquet_stage
-        FILE_FORMAT = (TYPE = PARQUET)
-    """)
+    # # 1. Create a stage (one-time safe to re-run)
+    # cur.execute("""
+    #     CREATE OR REPLACE STAGE trips_parquet_stage
+    #     FILE_FORMAT = (TYPE = PARQUET)
+    # """)
 
     # 2. Upload file to stage
     cur.execute(f"""

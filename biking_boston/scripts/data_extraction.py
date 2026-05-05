@@ -2,7 +2,7 @@ import requests
 import zipfile
 import io
 import pandas as pd
-from biking_boston.scripts.utils import iter_months, delete_file, get_date_range, parquet_exists, get_csv_filename, make_ride_id
+from biking_boston.scripts.utils import iter_months, get_date_range, parquet_exists, make_ride_id
 from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -21,19 +21,10 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
 
     # Step 2: Unzip the downloaded ZIP file
     with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
-        # Extract all the files from the ZIP
-        zip_file.extractall()
+        csv_name = [f for f in zip_file.namelist() if f.endswith(".csv")][0]
 
-        # Step 3: Find the CSV file inside the unzipped folder
-        csv_file_path = get_csv_filename(zip_file_name)
-
-        # Step 4: Read the CSV data using pandas
-        logger.info(f'Storing {csv_file_name}')
-        df = pd.read_csv(csv_file_path)
-
-        # Step 5: Delete File from path
-        logger.info(f'Removing {csv_file_name}')
-        delete_file(csv_file_path)
+        with zip_file.open(csv_name) as csv_file:
+            df = pd.read_csv(csv_file)
 
         if "rideable_type" not in df.columns:
             df["rideable_type"] = "classic_bike"
@@ -148,22 +139,22 @@ def extract_hub_data():
 if __name__ == '__main__':
 
     is_read_trip_data = True
-    is_read_hub_data = False
+    # is_read_hub_data = False
 
     if is_read_trip_data:
         logger.info('Reading Trip Data')
         extract_trip_data()
         logger.info(f"Data has been written to output path in Parquet format.")
         copy_staging_to_raw()
-        logger.info('Copied staged data into ')
+        logger.info('Copied staged data into TRIPS table')
 
     else:
         logger.info('Skip Trip Data')
         pass
 
-    if is_read_hub_data:
-        logger.info('Reading Hub Data')
-        extract_hub_data().to_csv('../inputs/blue_bikes_hub_data.csv')
-    else:
-        logger.info('Skip Hub Data')
-        pass
+    # if is_read_hub_data:
+    #     logger.info('Reading Hub Data')
+    #     extract_hub_data().to_csv('../inputs/blue_bikes_hub_data.csv')
+    # else:
+    #     logger.info('Skip Hub Data')
+    #     pass
