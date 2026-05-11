@@ -9,6 +9,8 @@ import pyarrow.parquet as pq
 import re
 from data_export import export_to_snowflake_staging, copy_staging_to_raw
 
+import snowflake.connector
+import os
 
 def stitch_dataframes_vertically(dataframes):
     # Concatenate the DataFrames vertically
@@ -71,6 +73,7 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
                                                        'usertype':'member_casual'})
 
         df["ride_id"] = df.apply(make_ride_id, axis=1)
+        df["load_date"] = pd.Timestamp.utcnow()
 
         return df
 
@@ -78,13 +81,36 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
 def extract_trip_data():
     start_month, end_month = get_date_range()
     blue_bikes_trip_data = pd.DataFrame()
+
+    conn = snowflake.connector.connect(
+        user="COLINCLAPHAM",
+        account="TMHSYSP-WZC86394",
+        warehouse="bluebikes_prod",
+        database="BLUEBIKES",
+        schema="RAW",
+        private_key_file="../../rsa_key.pem"
+        # private_key_file = load_private_key()
+    )
+
+    existing_vintages = pd.read_sql("""
+        select distinct to_char(vintage_month, 'YYYYMM') as vintage
+        from bluebikes.staged.vintages
+    """, conn)
+
+    conn.close()
+    existing_set = set(existing_vintages["VINTAGE"].tolist())
+
     for y, m in iter_months(start_month, end_month):
         month = "%d%02d" % (y, m)
 
-        # 👇 skip if already processed
-        if parquet_exists(month):
-            logger.info(f"Skipping {month}, already exists")
+        if month in existing_set:
+            logger.info(f"Skipping {month} (already loaded)")
             continue
+
+        # # 👇 skip if already processed
+        # if parquet_exists(month):
+        #     logger.info(f"Skipping {month}, already exists")
+        #     continue
 
         logger.info(f'Reading month {month}')
 

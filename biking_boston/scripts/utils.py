@@ -22,7 +22,8 @@ def delete_file(file_path):
         print(f"Error occurred while deleting the file: {e}")
 
 def get_date_range():
-    start_month = "201805"
+    # start_month = "201805"
+    start_month = "202501"
 
     today = datetime.today()
     year = today.year
