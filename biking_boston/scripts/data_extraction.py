@@ -2,11 +2,12 @@ import requests
 import zipfile
 import io
 import pandas as pd
-from biking_boston.scripts.utils import iter_months, delete_file, get_date_range, parquet_exists, get_csv_filename
+from biking_boston.scripts.utils import iter_months, get_date_range, parquet_exists, make_ride_id, connect_to_snowflake
 from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
 import re
+from data_export import export_to_snowflake_staging, copy_staging_to_raw
 
 
 def stitch_dataframes_vertically(dataframes):
@@ -21,19 +22,15 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
 
     # Step 2: Unzip the downloaded ZIP file
     with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
-        # Extract all the files from the ZIP
-        zip_file.extractall()
+        csv_name = [f for f in zip_file.namelist() if f.endswith(".csv")][0]
 
-        # Step 3: Find the CSV file inside the unzipped folder
-        csv_file_path = get_csv_filename(zip_file_name)
+        with zip_file.open(csv_name) as csv_file:
+            df = pd.read_csv(csv_file)
 
-        # Step 4: Read the CSV data using pandas
-        logger.info(f'Storing {csv_file_name}')
-        df = pd.read_csv(csv_file_path)
-
-        # Step 5: Delete File from path
-        logger.info(f'Removing {csv_file_name}')
-        delete_file(csv_file_path)
+        if "rideable_type" not in df.columns:
+            df["rideable_type"] = "classic_bike"
+        else:
+            df["rideable_type"] = df["rideable_type"].fillna("classic_bike")
 
         # Step 6: Process Data to account for migration of data points
         if 'ride_id' in df:
@@ -47,7 +44,8 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
                      'start_lng',
                      'end_lat',
                      'end_lng',
-                     'member_casual']]
+                     'member_casual',
+                     'rideable_type']]
         else:
             df = df[['starttime',
                      'stoptime',
@@ -59,30 +57,46 @@ def download_and_unzip_csv(url, zip_file_name, csv_file_name):
                      'start station longitude',
                      'end station latitude',
                      'end station longitude',
-                     'usertype']].rename(columns={'starttime':'started_at',
-                                                  'stoptime':'ended_at',
-                                                  'start station name': 'start_station_name',
-                                                  'start station id':'legacy_start_station_id',
-                                                  'end station name':'end_station_name',
-                                                  'end station id':'legacy_end_station_id',
-                                                  'start station latitude':'start_lat',
-                                                  'start station longitude':'start_lng',
-                                                  'end station latitude':'end_lat',
-                                                  'end station longitude':'end_lng',
-                                                  'usertype':'member_casual'})
+                     'usertype',
+                     'rideable_type']].rename(columns={'starttime':'started_at',
+                                                       'stoptime':'ended_at',
+                                                       'start station name': 'start_station_name',
+                                                       'start station id':'legacy_start_station_id',
+                                                       'end station name':'end_station_name',
+                                                       'end station id':'legacy_end_station_id',
+                                                       'start station latitude':'start_lat',
+                                                       'start station longitude':'start_lng',
+                                                       'end station latitude':'end_lat',
+                                                       'end station longitude':'end_lng',
+                                                       'usertype':'member_casual'})
+
+        df["ride_id"] = df.apply(make_ride_id, axis=1)
+        df["load_date"] = pd.Timestamp.utcnow()
+
         return df
 
 
 def extract_trip_data():
     start_month, end_month = get_date_range()
     blue_bikes_trip_data = pd.DataFrame()
+
+    conn = connect_to_snowflake()
+
+    existing_vintages = pd.read_sql("""
+        select distinct to_char(vintage_month, 'YYYYMM') as vintage
+        from bluebikes.staged.vintages
+    """, conn)
+
+    conn.close()
+    existing_set = set(existing_vintages["VINTAGE"].tolist())
+
     for y, m in iter_months(start_month, end_month):
         month = "%d%02d" % (y, m)
 
-        # 👇 skip if already processed
-        if parquet_exists(month):
-            logger.info(f"Skipping {month}, already exists")
+        if month in existing_set:
+            logger.info(f"Skipping {month} (already loaded)")
             continue
+
 
         logger.info(f'Reading month {month}')
 
@@ -107,11 +121,11 @@ def extract_trip_data():
                 match = re.search(r"\d{6}", file_name)
                 yyyymm = match.group(0)
 
-                output_path = f"../outputs/raw/blue_bikes_trips_data_raw_{yyyymm}.parquet"
-                df.to_parquet(output_path, index=False)
-
-                logger.info(f"Wrote {output_path}")
+                logger.info(f"Wrote {yyyymm}")
                 success = True
+
+                export_to_snowflake_staging(yyyymm)
+                logger.info(f"Wrote blue_bikes_trips_data_raw_{yyyymm} to snowflake")
                 break
 
             except Exception as e:
@@ -135,19 +149,14 @@ def extract_hub_data():
 if __name__ == '__main__':
 
     is_read_trip_data = True
-    is_read_hub_data = False
 
     if is_read_trip_data:
         logger.info('Reading Trip Data')
         extract_trip_data()
-        print(f"Data has been written to output path in Parquet format.")
+        logger.info(f"Data has been written to output path in Parquet format.")
+        copy_staging_to_raw()
+        logger.info('Copied staged data into TRIPS table')
+
     else:
         logger.info('Skip Trip Data')
-        pass
-
-    if is_read_hub_data:
-        logger.info('Reading Hub Data')
-        extract_hub_data().to_csv('../inputs/blue_bikes_hub_data.csv')
-    else:
-        logger.info('Skip Hub Data')
         pass

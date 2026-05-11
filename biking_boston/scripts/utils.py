@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+import hashlib
+
 
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
@@ -20,7 +22,7 @@ def delete_file(file_path):
         print(f"Error occurred while deleting the file: {e}")
 
 def get_date_range():
-    start_month = "201805"
+    start_month = "202501"
 
     today = datetime.today()
     year = today.year
@@ -39,11 +41,6 @@ def get_date_range():
     return start_month, end_month_str
 
 
-def parquet_exists(yyyymm):
-    path = f"../outputs/raw/blue_bikes_trips_data_raw_{yyyymm}.parquet"
-    return os.path.exists(path)
-
-
 def get_csv_filename(file_name):
     if file_name.endswith(".csv.zip"):
         return file_name.replace(".csv.zip", ".csv")
@@ -51,3 +48,26 @@ def get_csv_filename(file_name):
         return file_name.replace(".zip", ".csv")
     else:
         raise ValueError(f"Unexpected filename: {file_name}")
+
+def make_ride_id(row):
+    base_string = (
+        str(row["started_at"]) +
+        str(row["ended_at"]) +
+        str(row["start_station_name"]) +
+        str(row["end_station_name"]) +
+        str(row.get("bike_id", ""))  # optional if exists
+    )
+
+    return hashlib.md5(base_string.encode()).hexdigest()
+
+def connect_to_snowflake():
+
+    conn = snowflake.connector.connect(
+        user="COLINCLAPHAM",
+        account="TMHSYSP-WZC86394",
+        warehouse="bluebikes_prod",
+        database="BLUEBIKES",
+        schema="RAW",
+        # private_key_file="../../rsa_key.pem"
+        private_key_file = load_private_key()
+    )
