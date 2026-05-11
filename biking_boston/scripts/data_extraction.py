@@ -2,15 +2,13 @@ import requests
 import zipfile
 import io
 import pandas as pd
-from biking_boston.scripts.utils import iter_months, get_date_range, parquet_exists, make_ride_id
+from biking_boston.scripts.utils import iter_months, get_date_range, parquet_exists, make_ride_id, connect_to_snowflake
 from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
 import re
 from data_export import export_to_snowflake_staging, copy_staging_to_raw
 
-import snowflake.connector
-import os
 
 def stitch_dataframes_vertically(dataframes):
     # Concatenate the DataFrames vertically
@@ -82,15 +80,7 @@ def extract_trip_data():
     start_month, end_month = get_date_range()
     blue_bikes_trip_data = pd.DataFrame()
 
-    conn = snowflake.connector.connect(
-        user="COLINCLAPHAM",
-        account="TMHSYSP-WZC86394",
-        warehouse="bluebikes_prod",
-        database="BLUEBIKES",
-        schema="RAW",
-        private_key_file="../../rsa_key.pem"
-        # private_key_file = load_private_key()
-    )
+    conn = connect_to_snowflake()
 
     existing_vintages = pd.read_sql("""
         select distinct to_char(vintage_month, 'YYYYMM') as vintage
@@ -107,10 +97,6 @@ def extract_trip_data():
             logger.info(f"Skipping {month} (already loaded)")
             continue
 
-        # # 👇 skip if already processed
-        # if parquet_exists(month):
-        #     logger.info(f"Skipping {month}, already exists")
-        #     continue
 
         logger.info(f'Reading month {month}')
 
@@ -135,10 +121,7 @@ def extract_trip_data():
                 match = re.search(r"\d{6}", file_name)
                 yyyymm = match.group(0)
 
-                output_path = f"../outputs/raw/blue_bikes_trips_data_raw_{yyyymm}.parquet"
-                df.to_parquet(output_path, index=False)
-
-                logger.info(f"Wrote {output_path}")
+                logger.info(f"Wrote {yyyymm}")
                 success = True
 
                 export_to_snowflake_staging(yyyymm)
@@ -166,7 +149,6 @@ def extract_hub_data():
 if __name__ == '__main__':
 
     is_read_trip_data = True
-    # is_read_hub_data = False
 
     if is_read_trip_data:
         logger.info('Reading Trip Data')
@@ -178,10 +160,3 @@ if __name__ == '__main__':
     else:
         logger.info('Skip Trip Data')
         pass
-
-    # if is_read_hub_data:
-    #     logger.info('Reading Hub Data')
-    #     extract_hub_data().to_csv('../inputs/blue_bikes_hub_data.csv')
-    # else:
-    #     logger.info('Skip Hub Data')
-    #     pass
