@@ -2,7 +2,7 @@ import requests
 import zipfile
 import io
 import pandas as pd
-from biking_boston.scripts.utils import iter_months, get_date_range, parquet_exists, make_ride_id, connect_to_snowflake
+from biking_boston.scripts.utils import iter_months, get_date_range, make_ride_id, connect_to_snowflake
 from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
