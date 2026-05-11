@@ -116,7 +116,7 @@ def extract_trip_data():
                 success = True
 
                 export_to_snowflake_staging(yyyymm)
-                logger.info(f"Wrote {output_path} to snowflake")
+                logger.info(f"Wrote blue_bikes_trips_data_raw_{yyyymm} to snowflake")
                 break
 
             except Exception as e:
