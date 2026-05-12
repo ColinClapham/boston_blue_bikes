@@ -21,12 +21,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pyarrow requests loguru snowflake
+          pip install pandas pyarrow requests loguru snowflake cryptography
 
       - name: Run data extraction
         env:
           PEM_FILE_CONTENTS: ${{ secrets.pem_file_contents }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          echo -e "$PEM_FILE_CONTENTS" > ${{ github.workspace }}/rsa_key.p8
           python -m biking_boston.scripts.data_extraction
