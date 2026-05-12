@@ -28,4 +28,5 @@ jobs:
           PEM_FILE_CONTENTS: ${{ secrets.pem_file_contents }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
+          echo -e "$PEM_FILE_CONTENTS" > rsa_key.p8
           python -m biking_boston.scripts.data_extraction
