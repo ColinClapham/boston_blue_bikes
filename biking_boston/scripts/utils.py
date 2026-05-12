@@ -32,7 +32,6 @@ def load_private_key():
     return pkb
 
 
-
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
     return y * 12 + m
@@ -99,6 +98,6 @@ def connect_to_snowflake():
         database="BLUEBIKES",
         schema="RAW",
         # private_key_file="../../rsa_key.pem"
-        private_key_file = load_private_key()
+        private_key = load_private_key()
     )
 
