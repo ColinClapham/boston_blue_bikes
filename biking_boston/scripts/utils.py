@@ -4,10 +4,6 @@ import hashlib
 import snowflake.connector
 
 def load_private_key():
-    # key_path = "/tmp/rsa_key.pem"
-    # with open(key_path, "w") as f:
-    #     f.write(os.environ["PEM_FILE_CONTENTS"])
-    # return key_path
     with open("rsa_key.p8", "rb") as key_file:
         p_key = key_file.read()
     return p_key
