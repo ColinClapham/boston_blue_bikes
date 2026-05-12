@@ -2,11 +2,7 @@ import snowflake.connector
 import os
 from biking_boston.scripts.utils import connect_to_snowflake
 
-def load_private_key():
-    key_path = "/tmp/rsa_key.pem"
-    with open(key_path, "w") as f:
-        f.write(os.environ["PEM_FILE_CONTENTS"])
-    return key_path
+
 
 def export_to_snowflake_staging(month_string):
 
