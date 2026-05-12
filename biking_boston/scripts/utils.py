@@ -2,7 +2,12 @@ import os
 from datetime import datetime
 import hashlib
 import snowflake.connector
-from biking_boston.scripts.data_export import load_private_key
+
+def load_private_key():
+    key_path = "/tmp/rsa_key.pem"
+    with open(key_path, "w") as f:
+        f.write(os.environ["PEM_FILE_CONTENTS"])
+    return key_path
 
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
@@ -72,3 +77,4 @@ def connect_to_snowflake():
         # private_key_file="../../rsa_key.pem"
         private_key_file = load_private_key()
     )
+
