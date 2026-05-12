@@ -15,7 +15,7 @@ from cryptography.hazmat.backends import default_backend
 
 def load_private_key():
 
-    pem_contents = os.environ["PEM_FILE_CONTENTS"]
+    pem_contents = os.environ["PEM_FILE_CONTENTS2"]
 
     p_key = serialization.load_pem_private_key(
         pem_contents.encode(),
