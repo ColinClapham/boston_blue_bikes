@@ -101,3 +101,4 @@ def connect_to_snowflake():
         private_key = load_private_key()
     )
 
+    return conn
