@@ -3,11 +3,34 @@ from datetime import datetime
 import hashlib
 import snowflake.connector
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+
+
+# def load_private_key():
+#     with open("rsa_key.p8", "rb") as key_file:
+#         p_key = key_file.read()
+#     return p_key
+
+
 def load_private_key():
-    key_path = "/tmp/rsa_key.pem"
-    with open(key_path, "w") as f:
-        f.write(os.environ["PEM_FILE_CONTENTS"])
-    return key_path
+
+    pem_contents = os.environ["PEM_FILE_CONTENTS2"]
+
+    p_key = serialization.load_pem_private_key(
+        pem_contents.encode(),
+        password=None,  # or b"password" if encrypted
+        backend=default_backend()
+    )
+
+    pkb = p_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+    return pkb
+
 
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
@@ -75,6 +98,7 @@ def connect_to_snowflake():
         database="BLUEBIKES",
         schema="RAW",
         # private_key_file="../../rsa_key.pem"
-        private_key_file = load_private_key()
+        private_key = load_private_key()
     )
 
+    return conn
