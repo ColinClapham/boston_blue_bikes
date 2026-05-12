@@ -7,7 +7,7 @@ from loguru import logger
 import pyarrow as pa
 import pyarrow.parquet as pq
 import re
-from data_export import export_to_snowflake_staging, copy_staging_to_raw
+from biking_boston.scripts.data_export import export_to_snowflake_staging, copy_staging_to_raw
 
 
 def stitch_dataframes_vertically(dataframes):
