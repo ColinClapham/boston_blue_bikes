@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import hashlib
-
+import snowflake.connector
 
 def to_month(yyyymm):
     y, m = int(yyyymm[:4]), int(yyyymm[4:])
