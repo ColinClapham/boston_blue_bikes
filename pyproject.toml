@@ -17,6 +17,9 @@ h3 = "^3.7.6"
 snowflake = "^1.12.0"
 dbt-snowflake = "^1.11.4"
 cryptography = "^48.0.0"
+osmnx = "^2.1.0"
+geopandas = "^1.1.3"
+scikit-learn = "^1.8.0"
 
 
 [build-system]

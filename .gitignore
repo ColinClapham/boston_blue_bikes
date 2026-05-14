@@ -7,3 +7,8 @@ biking_boston/scripts/__pycache__
 tests
 *.pem
 *.pub
+
+*.geojson
+biking_boston/bike_router/__pycache__
+boston_bike.graphml
+biking_boston/scripts/cache
