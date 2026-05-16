@@ -25,9 +25,35 @@ G = load_bike_graph()
 # Apply safety weights
 for u, v, k, data in G.edges(keys=True, data=True):
 
-    data["safety_weight"] = (
-        calculate_edge_safety(data)
+    safety = calculate_edge_safety(data)
+
+    data["safety_weight"] = safety
+
+    # Fastest
+    data["length_weight"] = data.get(
+        "length",
+        1
     )
+
+    # Balanced
+    data["balanced_weight"] = (
+        safety * 0.7
+        +
+        data.get("length", 1) * 0.3
+    )
+
+    # Family Safe
+    family_weight = safety
+
+    highway = data.get("highway")
+
+    if highway in [
+        "primary",
+        "secondary"
+    ]:
+        family_weight *= 4
+
+    data["family_weight"] = family_weight
 
 # Convert addresses
 start_lat, start_lon = geocode_address(

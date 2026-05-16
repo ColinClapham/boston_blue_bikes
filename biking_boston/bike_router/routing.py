@@ -19,7 +19,8 @@ def safest_route(
     start_lat,
     start_lon,
     end_lat,
-    end_lon
+    end_lon,
+    weight="safety_weight"
 ):
 
     orig = ox.nearest_nodes(
@@ -38,7 +39,7 @@ def safest_route(
         G,
         orig,
         dest,
-        weight="safety_weight"
+        weight=weight
     )
 
     return route
